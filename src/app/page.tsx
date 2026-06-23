@@ -1,8 +1,10 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import AnimatedCounter from '../components/AnimatedCounter';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
+import AdminRegistrationsPage from './admin/registrations/page';
 import { useLanguage } from '../context/LanguageContext';
 import { homeEvents } from '../constants/translations';
 
@@ -25,9 +27,78 @@ export default function HomePage() {
   const events = homeEvents[language];
   const tamilClass = language === 'ta' ? 'tamil-text' : '';
 
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminView, setAdminView] = useState(false);
+
+  const checkAuth = () => {
+    const token = localStorage.getItem('adminToken');
+    setIsAdmin(!!token);
+    const viewPref = localStorage.getItem('adminViewActive') === 'true';
+    setAdminView(!!token && viewPref);
+  };
+
+  useEffect(() => {
+    checkAuth();
+    window.addEventListener('admin-auth-change', checkAuth);
+    window.addEventListener('storage', checkAuth);
+    return () => {
+      window.removeEventListener('admin-auth-change', checkAuth);
+      window.removeEventListener('storage', checkAuth);
+    };
+  }, []);
+
+  const toggleAdminView = (active: boolean) => {
+    localStorage.setItem('adminViewActive', String(active));
+    setAdminView(active);
+    window.dispatchEvent(new Event('admin-auth-change'));
+  };
+
+  if (adminView) {
+    return (
+      <div className="min-h-screen bg-surface text-white">
+        <Header />
+        <main className="mx-auto max-w-7xl px-6 pb-16 pt-24 lg:px-10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-primary/20 pb-4">
+            <div>
+              <h1 className={`text-2xl font-bold text-accent ${tamilClass}`}>
+                {language === 'ta' ? 'நிர்வாகப் பதிவுகள் தரவுத்தளம்' : 'Registrations Database'}
+              </h1>
+              <p className={`text-xs text-gray-400 mt-1 ${tamilClass}`}>
+                {language === 'ta' ? 'மாணவர்களின் பதிவு விவரங்களை நிர்வகித்தல்' : 'Manage and view registered student profiles'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleAdminView(false)}
+              className={`btn-outline !py-2 !px-5 !text-xs self-start sm:self-auto cursor-pointer ${tamilClass}`}
+            >
+              {language === 'ta' ? '← பொதுப் பக்கத்திற்குச் செல்' : '← Back to Public Home'}
+            </button>
+          </div>
+          <AdminRegistrationsPage />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-surface text-white">
       <Header />
+      {isAdmin && (
+        <div className="bg-primary/25 border-b border-primary/40 py-2.5 px-6 text-center text-xs flex flex-wrap justify-center items-center gap-3 mt-16 z-40 relative animate-fade-in">
+          <span className={`text-accent font-semibold ${tamilClass}`}>
+            {language === 'ta' ? '⭐ நிர்வாகியாக உள்நுழைந்துள்ளீர்கள்' : '⭐ Logged in as Administrator'}
+          </span>
+          <button
+            type="button"
+            onClick={() => toggleAdminView(true)}
+            className={`bg-accent text-black font-bold px-4 py-1.5 rounded-full hover:bg-white transition cursor-pointer text-[11px] ${tamilClass}`}
+          >
+            {language === 'ta' ? 'பதிவுகள் தரவுத்தளத்தைக் காட்டு' : 'View Registrations Database'}
+          </button>
+        </div>
+      )}
       <main className="m-0 overflow-hidden p-0">
         {/* Hero — starts immediately below navbar */}
         <section className="hero-gradient relative border-b border-primary/30 px-6 pb-16 pt-16 lg:px-10">

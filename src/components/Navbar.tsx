@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { Menu, X, Globe } from 'lucide-react';
 
@@ -7,8 +7,10 @@ export default function Navbar() {
   const { language, setLanguage, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
   const location = useLocation();
   const pathname = location.pathname;
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,16 +24,30 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    setIsAdminLoggedIn(!!token);
+  }, [pathname]);
+
   const navItems = [
     { name: t.home, path: '/' },
     { name: t.about, path: '/about' },
     { name: t.whyJoin, path: '/why-join' },
     { name: t.activities, path: '/activities' },
-    { name: t.contact, path: '/contact' }
+    { name: t.contact, path: '/contact' },
+    ...(isAdminLoggedIn
+      ? [{ name: language === 'ta' ? 'நிர்வாகப் பலகை' : 'Admin Panel', path: '/admin/dashboard' }]
+      : [])
   ];
 
   const toggleLanguage = () => {
     setLanguage(language === 'ta' ? 'en' : 'ta');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('adminToken');
+    setIsAdminLoggedIn(false);
+    navigate('/');
   };
 
   const isActive = (path: string) => {
@@ -78,7 +94,7 @@ export default function Navbar() {
             {/* Language Toggle */}
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 hover:border-[#8B0000] text-gray-700 hover:text-[#8B0000] text-xs font-semibold transition-all duration-200"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-300 hover:border-[#8B0000] text-gray-700 hover:text-[#8B0000] text-xs font-semibold transition-all duration-200 cursor-pointer"
             >
               <Globe className="w-3.5 h-3.5" />
               <span>{language === 'ta' ? 'English' : 'தமிழ்'}</span>
@@ -91,6 +107,24 @@ export default function Navbar() {
             >
               {t.joinNow}
             </Link>
+
+            {/* Admin Login/Logout Button */}
+            {isAdminLoggedIn ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="border border-[#8B0000] text-[#8B0000] hover:bg-[#8B0000] hover:text-white px-4 py-2.5 rounded-full text-sm font-bold shadow-sm transition-all duration-200 cursor-pointer"
+              >
+                {language === 'ta' ? 'வெளியேறு' : 'Logout'}
+              </button>
+            ) : (
+              <Link
+                to="/admin"
+                className="border border-gray-300 hover:border-[#8B0000] text-gray-700 hover:text-[#8B0000] px-4 py-2.5 rounded-full text-sm font-semibold transition-all duration-200"
+              >
+                {language === 'ta' ? 'நிர்வாகி' : 'Admin'}
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Buttons */}
@@ -140,9 +174,32 @@ export default function Navbar() {
             >
               {t.joinNow}
             </Link>
+
+            {/* Mobile Admin Login/Logout */}
+            {isAdminLoggedIn ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  handleLogout();
+                }}
+                className="block w-full text-center border border-red-600 text-red-600 hover:bg-red-50 px-4 py-3 rounded-md text-base font-bold transition-all duration-200 cursor-pointer"
+              >
+                {language === 'ta' ? 'நிர்வாகி வெளியேறு' : 'Admin Logout'}
+              </button>
+            ) : (
+              <Link
+                to="/admin"
+                onClick={() => setIsOpen(false)}
+                className="block text-center border border-gray-300 hover:border-[#8B0000] text-gray-700 hover:text-[#8B0000] px-4 py-3 rounded-md text-base font-bold transition-all duration-200"
+              >
+                {language === 'ta' ? 'நிர்வாகி உள்நுழைவு' : 'Admin Login'}
+              </Link>
+            )}
           </div>
         </div>
       )}
     </nav>
   );
 }
+

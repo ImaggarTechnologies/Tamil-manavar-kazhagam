@@ -177,6 +177,73 @@ router.get('/admin/registrations', requireAdmin, async (req: Request, res: Respo
   }
 });
 
+// 5a. Admin Create Registration
+router.post('/admin/registrations', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const db = mongoose.connection.db;
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not ready' });
+    }
+    const result = await db.collection('registrations').insertOne({ ...req.body, createdAt: new Date() });
+    res.json({ success: true, id: result.insertedId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Unable to create registration' });
+  }
+});
+
+// 5b. Admin Update Registration
+router.put('/admin/registrations/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Missing registration ID' });
+
+    const db = mongoose.connection.db;
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not ready' });
+    }
+
+    const { _id, ...updateData } = req.body;
+    const result = await db.collection('registrations').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateData }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'Registration not found' });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Unable to update registration' });
+  }
+});
+
+// 5c. Admin Delete Registration
+router.delete('/admin/registrations/:id', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: 'Missing registration ID' });
+
+    const db = mongoose.connection.db;
+    if (!db) {
+      return res.status(500).json({ error: 'Database connection not ready' });
+    }
+
+    const result = await db.collection('registrations').deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: 'Registration not found' });
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Unable to delete registration' });
+  }
+});
+
 // 6. Admin Contacts (Get/Mark Resolved)
 router.get('/admin/contacts', requireAdmin, async (req: Request, res: Response) => {
   try {
